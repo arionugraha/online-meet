@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useStreamVideoClient } from "@stream-io/video-react-sdk";
+import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -96,14 +96,98 @@ function StartTimeInput({ value, onStartTimeChange }: StartTimeInputProps) {
    );
 }
 
+// Participants
+interface ParticipantsInputProps {
+   value: string;
+   onParticipantsChange: (value: string) => void;
+}
+
+function ParticipansInput({ value, onParticipantsChange }: ParticipantsInputProps) {
+   const [active, setActive] = useState(false);
+
+   return (
+      <div className="space-y-2">
+         <div className="font-medium">Participants:</div>
+         <label className="flex items-center gap-1.5">
+            <input
+               type="radio"
+               checked={!active}
+               onChange={(e) => {
+                  setActive(false);
+                  onParticipantsChange("");
+               }}
+            />
+            Public Meeting
+         </label>
+         <label className="flex items-center gap-1.5">
+            <input
+               type="radio"
+               checked={active}
+               onChange={(e) => {
+                  setActive(true);
+                  onParticipantsChange("");
+               }}
+            />
+            Private Meeting
+         </label>
+         {active && (
+            <label className="block space-y-1">
+               <span className="font-medium">Participant Emails</span>
+               <textarea
+                  value={value}
+                  onChange={(e) => onParticipantsChange(e.target.value)}
+                  placeholder="Enter participant emails"
+                  className="w-full rounded-md border border-gray-300 p-2"
+               />
+            </label>
+         )}
+      </div>
+   );
+}
+
+// Meeting Link
+interface MeetingLinkProps {
+   call: Call;
+}
+
+function MeetingLink({ call }: MeetingLinkProps) {
+   const meetingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/meeting/${call.id}`;
+
+   return <div className="text-center">{meetingLink}</div>;
+}
+
 export default function CreateMeetingPage() {
    const { user } = useUser();
    const client = useStreamVideoClient();
    const [description, setDescription] = useState("");
    const [startTime, setStartTime] = useState("");
+   const [participants, setParticipants] = useState("");
+   const [call, setCall] = useState<Call>();
 
    if (!user || !client) {
       return <Loader2 className="mx-auto animate-spin" />;
+   }
+
+   async function createMeeting() {
+      if (!user || !client) return;
+
+      try {
+         const callId = crypto.randomUUID();
+         const call = client.call("default", callId);
+
+         await call.getOrCreate({
+            data: {
+               custom: {
+                  description: description,
+               },
+            },
+         });
+
+         setCall(call);
+      } catch (error) {
+         console.error(error);
+         alert("Failed to create meeting.");
+      }
    }
 
    return (
@@ -113,7 +197,12 @@ export default function CreateMeetingPage() {
             <h2 className="text-xl font-bold">Create a New Meeting</h2>
             <DescriptionInput value={description} onDescriptionChange={setDescription} />
             <StartTimeInput value={startTime} onStartTimeChange={setStartTime} />
+            <ParticipansInput value={participants} onParticipantsChange={setParticipants} />
+            <button onClick={createMeeting} className="w-full">
+               Create Meeting
+            </button>
          </div>
+         {call && <MeetingLink call={call} />}
       </div>
    );
 }
