@@ -1,8 +1,9 @@
+import NavBar from "@/components/NavBar";
+import { ClerkProvider } from "@clerk/nextjs";
+import "@stream-io/video-react-sdk/dist/css/styles.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-import NavBar from "@/components/NavBar";
 import StreamClientProvider from "./StreamClientProvider";
 
 const inter = Inter({ subsets: ["latin"] });
