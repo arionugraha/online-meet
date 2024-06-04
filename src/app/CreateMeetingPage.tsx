@@ -2,12 +2,12 @@
 
 import { useUser } from "@clerk/nextjs";
 import { Call, MemberRequest, useStreamVideoClient } from "@stream-io/video-react-sdk";
-import { Loader2 } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { getUserIds } from "./actions";
 import Button from "@/components/Button";
+import Link from "next/link";
 
-// Meeting Description
 interface DescriptionInputProps {
    value: string;
    onDescriptionChange: (value: string) => void;
@@ -45,7 +45,6 @@ function DescriptionInput({ value, onDescriptionChange }: DescriptionInputProps)
    );
 }
 
-// Meeting Time
 interface StartTimeInputProps {
    value: string;
    onStartTimeChange: (value: string) => void;
@@ -98,13 +97,12 @@ function StartTimeInput({ value, onStartTimeChange }: StartTimeInputProps) {
    );
 }
 
-// Participants
 interface ParticipantsInputProps {
    value: string;
    onParticipantsChange: (value: string) => void;
 }
 
-function ParticipansInput({ value, onParticipantsChange }: ParticipantsInputProps) {
+function ParticipantsInput({ value, onParticipantsChange }: ParticipantsInputProps) {
    const [active, setActive] = useState(false);
 
    return (
@@ -147,7 +145,23 @@ function ParticipansInput({ value, onParticipantsChange }: ParticipantsInputProp
    );
 }
 
-// Meeting Link
+function getMailToLink(meetingLink: string, startsAt?: Date, description?: string) {
+   const startDateFormatted = startsAt
+      ? startsAt.toLocaleString("en-US", {
+           dateStyle: "full",
+           timeStyle: "short",
+        })
+      : undefined;
+
+   const subject = "Join meeting" + (startDateFormatted ? ` at ${startDateFormatted}` : "");
+   const body =
+      `Join meeting at ${meetingLink}.` +
+      (startDateFormatted ? `\n\nThe meeting starts at ${startDateFormatted}.` : "") +
+      (description ? `\n\nDescription: ${description}` : "");
+
+   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 interface MeetingLinkProps {
    call: Call;
 }
@@ -155,7 +169,34 @@ interface MeetingLinkProps {
 function MeetingLink({ call }: MeetingLinkProps) {
    const meetingLink = `${process.env.NEXT_PUBLIC_BASE_URL}/meeting/${call.id}`;
 
-   return <div className="text-center">{meetingLink}</div>;
+   return (
+      <div className="flex flex-col items-center gap-3 text-center">
+         <div className="flex items-center gap-3">
+            <span>
+               Invitation Link:{" "}
+               <Link href={meetingLink} target="_blank" className="font-medium">
+                  {meetingLink}
+               </Link>
+            </span>
+            <button
+               title="Copy invitation link"
+               onClick={() => {
+                  navigator.clipboard.writeText(meetingLink);
+                  alert("Copied link to clipboard!");
+               }}
+            >
+               <Copy />
+            </button>
+         </div>
+         <a
+            href={getMailToLink(meetingLink, call.state.startsAt, call.state.custom.description)}
+            target="_blank"
+            className="text-blue-500 hover:underline"
+         >
+            Send email invitation
+         </a>
+      </div>
+   );
 }
 
 export default function CreateMeetingPage() {
@@ -185,7 +226,7 @@ export default function CreateMeetingPage() {
             .concat({ user_id: user.id, role: "call_member" })
             .filter((v, i, a) => a.findIndex((t) => t.user_id === v.user_id) === i);
 
-         const starts_at = new Date(startTime || Date.now()).toISOString();
+         const startsAt = new Date(startTime || Date.now()).toISOString();
 
          await call.getOrCreate({
             data: {
@@ -193,7 +234,7 @@ export default function CreateMeetingPage() {
                   description: description,
                },
                members,
-               starts_at,
+               starts_at: startsAt,
             },
          });
 
@@ -211,7 +252,7 @@ export default function CreateMeetingPage() {
             <h2 className="text-xl font-bold">Create a New Meeting</h2>
             <DescriptionInput value={description} onDescriptionChange={setDescription} />
             <StartTimeInput value={startTime} onStartTimeChange={setStartTime} />
-            <ParticipansInput value={participants} onParticipantsChange={setParticipants} />
+            <ParticipantsInput value={participants} onParticipantsChange={setParticipants} />
             <Button onClick={createMeeting} className="w-full">
                Create Meeting
             </Button>
