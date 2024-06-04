@@ -5,6 +5,7 @@ import { Call, MemberRequest, useStreamVideoClient } from "@stream-io/video-reac
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { getUserIds } from "./actions";
+import Button from "@/components/Button";
 
 // Meeting Description
 interface DescriptionInputProps {
@@ -211,9 +212,9 @@ export default function CreateMeetingPage() {
             <DescriptionInput value={description} onDescriptionChange={setDescription} />
             <StartTimeInput value={startTime} onStartTimeChange={setStartTime} />
             <ParticipansInput value={participants} onParticipantsChange={setParticipants} />
-            <button onClick={createMeeting} className="w-full">
+            <Button onClick={createMeeting} className="w-full">
                Create Meeting
-            </button>
+            </Button>
          </div>
          {call && <MeetingLink call={call} />}
       </div>
