@@ -26,11 +26,11 @@ export default function StreamClientProvider({ children }: StreamClientProviderP
 }
 
 function useInitializeVideoClient() {
-   const { user, isLoaded } = useUser();
+   const { user, isLoaded: userLoaded } = useUser();
    const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null);
 
    useEffect(() => {
-      if (!isLoaded) return;
+      if (!userLoaded) return;
 
       let streamUser: User;
 
@@ -67,7 +67,7 @@ function useInitializeVideoClient() {
          client.disconnectUser();
          setVideoClient(null);
       };
-   }, [user?.id, user?.username, user?.imageUrl, isLoaded]);
+   }, [user?.id, user?.username, user?.imageUrl, userLoaded]);
 
    return videoClient;
 }
